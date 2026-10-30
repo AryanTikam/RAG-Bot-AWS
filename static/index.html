@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Support RAG Assistant • Production Deployment</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================
+       Material You 3 Light Theme • Flat, Clean & Tonal
+       ========================================================= */
+    :root {
+      --bg-page: #f5f6fa;
+      --surface-card: #ffffff;
+      --surface-header: #fbfbfe;
+      --surface-subtle: #f7f8fc;
+      --surface-input: #f2f4f8;
+      --surface-input-focus: #ffffff;
+
+      --border-subtle: #edeef4;
+      --border-card: #e4e6ef;
+      --border-input: #d3d6e2;
+
+      /* Material You 3 Tonal Accents */
+      --color-primary: #4355b9;
+      --color-primary-hover: #36469b;
+      --color-primary-container: #e4e7fa;
+      --color-on-primary-container: #151938;
+
+      --text-main: #191c24;
+      --text-secondary: #575c6d;
+      --text-muted: #8b91a2;
+
+      /* Material You Pastel Color Accents */
+      --pastel-blue-bg: #e0f2fe;
+      --pastel-blue-text: #0369a1;
+      --pastel-blue-border: #bae6fd;
+
+      --pastel-pink-bg: #fce7f3;
+      --pastel-pink-text: #9d174d;
+      --pastel-pink-border: #fbcfe8;
+
+      --pastel-amber-bg: #fef3c7;
+      --pastel-amber-text: #92400e;
+      --pastel-amber-border: #fde68a;
+
+      --pastel-purple-bg: #f3e8ff;
+      --pastel-purple-text: #6b21a8;
+      --pastel-purple-border: #e9d5ff;
+
+      --pastel-green-bg: #e6f6ee;
+      --pastel-green-text: #136338;
+      --pastel-green-border: #c7ebd7;
+
+      --pastel-red-bg: #fee2e2;
+      --pastel-red-text: #991b1b;
+      --pastel-red-border: #fca5a5;
+
+      --radius-pill: 9999px;
+      --radius-container: 28px;
+      --radius-card: 20px;
+      --radius-bubble: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      min-height: 100vh;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+      overflow-x: hidden;
+    }
+
+    /* Uncluttered Flat Container */
+    .app-container {
+      position: relative;
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 48px);
+      max-height: 920px;
+      background-color: var(--surface-card);
+      border-radius: var(--radius-container);
+      border: 1px solid var(--border-card);
+      box-shadow: 0 10px 30px rgba(25, 28, 36, 0.05);
+      overflow: hidden;
+    }
+
+    /* Clean Header */
+    header.app-header {
+      padding: 16px 24px;
+      background-color: var(--surface-header);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius-pill);
+      background-color: var(--color-primary-container);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand-icon svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: var(--color-primary);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .brand-text h1 {
+      font-size: 1.08rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--text-main);
+    }
+
+    .brand-text p {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Flat Status Pill */
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+      font-size: 0.78rem;
+      font-weight: 600;
+      background-color: var(--pastel-green-bg);
+      border: 1px solid var(--pastel-green-border);
+      color: var(--pastel-green-text);
+      transition: all 0.2s ease;
+    }
+
+    .status-pill.offline {
+      background-color: var(--pastel-red-bg);
+      border-color: var(--pastel-red-border);
+      color: var(--pastel-red-text);
+    }
+
+    .status-pill.checking {
+      background-color: var(--pastel-amber-bg);
+      border-color: var(--pastel-amber-border);
+      color: var(--pastel-amber-text);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #16a34a;
+      flex-shrink: 0;
+    }
+
+    .status-pill.offline .status-dot {
+      background-color: #dc2626;
+    }
+
+    .status-pill.checking .status-dot {
+      background-color: #d97706;
+    }
+
+    .action-btn-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: var(--radius-pill);
+      background-color: var(--surface-subtle);
+      border: 1px solid var(--border-card);
+      color: var(--text-secondary);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .action-btn-pill:hover {
+      background-color: #edeef4;
+      color: var(--text-main);
+    }
+
+    /* Knowledge Source Ticker Bar */
+    .knowledge-ticker {
+      padding: 9px 24px;
+      background-color: var(--surface-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      overflow-x: auto;
+    }
+
+    .knowledge-ticker span.title {
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .source-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      background-color: #ffffff;
+      border: 1px solid var(--border-card);
+      color: var(--color-primary);
+      white-space: nowrap;
+      font-weight: 500;
+      font-size: 0.75rem;
+    }
+
+    .model-badge {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.74rem;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      background-color: #edeef9;
+      border: 1px solid #dcdff4;
+      color: var(--color-primary);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* Chat Area */
+    .chat-area {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      scroll-behavior: smooth;
+    }
+
+    .chat-area::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .chat-area::-webkit-scrollbar-thumb {
+      background-color: #d8dae5;
+      border-radius: var(--radius-pill);
+    }
+
+    /* Uncluttered Welcome State (No Hero Badge) */
+    .welcome-card {
+      margin: auto 0;
+      text-align: center;
+      padding: 28px 20px;
+      max-width: 620px;
+      align-self: center;
+    }
+
+    .welcome-card h2 {
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      color: var(--text-main);
+    }
+
+    .welcome-card p {
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      margin-bottom: 24px;
+    }
+
+    .chips-label {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    /* Material You Colorful Pastel Chips */
+    .example-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .chip-btn {
+      padding: 8px 16px;
+      border-radius: var(--radius-pill);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .chip-btn:hover {
+      transform: translateY(-1px);
+      opacity: 0.92;
+    }
+
+    .chip-blue {
+      background-color: var(--pastel-blue-bg);
+      color: var(--pastel-blue-text);
+      border-color: var(--pastel-blue-border);
+    }
+
+    .chip-pink {
+      background-color: var(--pastel-pink-bg);
+      color: var(--pastel-pink-text);
+      border-color: var(--pastel-pink-border);
+    }
+
+    .chip-amber {
+      background-color: var(--pastel-amber-bg);
+      color: var(--pastel-amber-text);
+      border-color: var(--pastel-amber-border);
+    }
+
+    .chip-purple {
+      background-color: var(--pastel-purple-bg);
+      color: var(--pastel-purple-text);
+      border-color: var(--pastel-purple-border);
+    }
+
+    /* Messages */
+    .message-row {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .message-row.user {
+      align-items: flex-end;
+    }
+
+    .message-row.assistant {
+      align-items: flex-start;
+    }
+
+    .message-bubble {
+      max-width: 85%;
+      padding: 14px 18px;
+      border-radius: var(--radius-bubble);
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    .message-row.user .message-bubble {
+      background-color: var(--color-primary-container);
+      color: var(--color-on-primary-container);
+      border-bottom-right-radius: 4px;
+      font-weight: 500;
+    }
+
+    .message-row.assistant .message-bubble {
+      background-color: #ffffff;
+      color: var(--text-main);
+      border: 1px solid var(--border-card);
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    }
+
+    .meta-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+      padding: 0 4px;
+    }
+
+    .latency-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      background-color: #edeef9;
+      color: var(--color-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    /* Sources Tray */
+    .sources-tray {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sources-tray-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-right: 2px;
+    }
+
+    .source-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 0.74rem;
+      font-family: 'JetBrains Mono', monospace;
+      background-color: var(--pastel-green-bg);
+      border: 1px solid var(--pastel-green-border);
+      color: var(--pastel-green-text);
+      font-weight: 500;
+    }
+
+    .copy-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.72rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: color 0.15s;
+    }
+
+    .copy-btn:hover {
+      color: var(--text-main);
+    }
+
+    /* Flat Material Loading Card */
+    .loading-card {
+      background-color: #ffffff;
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-bubble);
+      border-bottom-left-radius: 4px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      max-width: 440px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    }
+
+    .loading-dots {
+      display: flex;
+      gap: 5px;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: var(--color-primary);
+      animation: bounceDot 1.4s infinite ease-in-out both;
+    }
+
+    .dot:nth-child(1) { animation-delay: -0.32s; }
+    .dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes bounceDot {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1.1); opacity: 1; }
+    }
+
+    /* Input Section */
+    footer.app-input-section {
+      padding: 14px 24px 18px;
+      border-top: 1px solid var(--border-subtle);
+      background-color: var(--surface-header);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Validation Alerts */
+    .validation-alert {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      border-radius: var(--radius-pill);
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .validation-alert.error {
+      display: flex;
+      background-color: var(--pastel-red-bg);
+      border: 1px solid var(--pastel-red-border);
+      color: var(--pastel-red-text);
+    }
+
+    .validation-alert.warning {
+      display: flex;
+      background-color: var(--pastel-amber-bg);
+      border: 1px solid var(--pastel-amber-border);
+      color: var(--pastel-amber-text);
+    }
+
+    /* Input Pill Container */
+    .input-wrapper {
+      display: flex;
+      align-items: center;
+      background-color: var(--surface-input);
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius-pill);
+      padding: 6px 8px 6px 20px;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    .input-wrapper:focus-within {
+      border-color: var(--color-primary);
+      background-color: var(--surface-input-focus);
+      border-width: 2px;
+      padding: 5px 7px 5px 19px;
+    }
+
+    .input-wrapper.shake {
+      animation: shakeInput 0.4s ease-in-out;
+      border-color: #ef4444 !important;
+    }
+
+    @keyframes shakeInput {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+
+    .input-wrapper textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-main);
+      font-size: 0.92rem;
+      resize: none;
+      max-height: 120px;
+      line-height: 1.4;
+      padding: 6px 0;
+      height: 32px;
+    }
+
+    .input-wrapper textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    .send-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-pill);
+      background-color: var(--color-primary);
+      border: none;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .send-btn:hover:not(:disabled) {
+      background-color: var(--color-primary-hover);
+    }
+
+    .send-btn:disabled {
+      background-color: #e2e4ec;
+      color: #9ea3b2;
+      cursor: not-allowed;
+    }
+
+    .send-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .input-meta-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    .char-counter {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .char-counter.warning {
+      color: var(--pastel-amber-text);
+      font-weight: 700;
+    }
+
+    .char-counter.limit {
+      color: var(--pastel-red-text);
+      font-weight: 700;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(25, 28, 36, 0.45);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background-color: #ffffff;
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-container);
+      padding: 24px;
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 15px 35px rgba(25, 28, 36, 0.12);
+    }
+
+    .modal-card h3 {
+      font-size: 1.15rem;
+      margin-bottom: 8px;
+      color: var(--text-main);
+    }
+
+    .modal-card p {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .modal-input {
+      width: 100%;
+      background-color: var(--surface-input);
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius-pill);
+      padding: 10px 18px;
+      color: var(--text-main);
+      font-size: 0.88rem;
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 16px;
+      outline: none;
+    }
+
+    .modal-input:focus {
+      border-color: var(--color-primary);
+      background-color: #ffffff;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 0; }
+      .app-container {
+        height: 100vh;
+        max-height: none;
+        border-radius: 0;
+        border: none;
+      }
+      header.app-header { padding: 14px 16px; }
+      .chat-area { padding: 16px; }
+      .message-bubble { max-width: 92%; }
+      footer.app-input-section { padding: 12px 16px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand-group">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Customer Support RAG</h1>
+          <p>Production Deployment • Experiment 8</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Live Health Status Pill -->
+        <div id="statusPill" class="status-pill checking" title="Checking API status...">
+          <div class="status-dot"></div>
+          <span id="statusText">Connecting...</span>
+        </div>
+
+        <!-- API Config Settings Pill -->
+        <button id="configBtn" class="action-btn-pill" title="Configure Backend API URL">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          Endpoint
+        </button>
+
+        <!-- Clear Chat Pill -->
+        <button id="clearBtn" class="action-btn-pill" title="Reset chat history">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+          Reset
+        </button>
+      </div>
+    </header>
+
+    <!-- Knowledge Base Ticker -->
+    <div class="knowledge-ticker">
+      <span class="title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+        Knowledge Base:
+      </span>
+      <span class="source-tag">📄 wellness.txt</span>
+      <span class="source-tag">📄 medication_safety.pdf</span>
+      <span class="source-tag">📄 faq.docx</span>
+      <span id="modelBadge" class="model-badge">
+        GroqCloud • Qwen 3.8 (27B)
+      </span>
+    </div>
+
+    <!-- Main Chat Log Area -->
+    <div id="chatArea" class="chat-area">
+      <!-- Uncluttered Welcome State -->
+      <div id="welcomeCard" class="welcome-card">
+        <h2>Customer Support & Knowledge Assistant</h2>
+        <p>Ask questions grounded in our verified medical guidelines, wellness recommendations, and customer support documentation.</p>
+
+        <span class="chips-label">Sample Questions</span>
+        <div class="example-chips">
+          <button class="chip-btn chip-blue" data-query="What does the wellness note say about hydration?">
+            💧 Hydration Guidelines
+          </button>
+          <button class="chip-btn chip-pink" data-query="What are the essential medication safety precautions?">
+            💊 Medication Safety
+          </button>
+          <button class="chip-btn chip-amber" data-query="What is the standard support turnaround time?">
+            🕒 Support Hours & SLA
+          </button>
+          <button class="chip-btn chip-purple" data-query="Can dogs safely consume dark chocolate?">
+            🐶 Negative Test (Out of Context)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Section with Client-Side Validation -->
+    <footer class="app-input-section">
+      <!-- Validation Alert Banner -->
+      <div id="validationAlert" class="validation-alert">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span id="validationMsg">Please enter a valid question.</span>
+      </div>
+
+      <!-- Input Pill Wrapper -->
+      <div id="inputWrapper" class="input-wrapper">
+        <textarea
+          id="questionInput"
+          placeholder="Ask a question from our knowledge base (e.g., hydration, medication, support)..."
+          maxlength="1000"
+          rows="1"
+        ></textarea>
+
+        <button id="sendBtn" class="send-btn" title="Send Question (Enter)">
+          <svg viewBox="0 0 24 24">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Input Meta & Counter Bar -->
+      <div class="input-meta-bar">
+        <span>Press <kbd style="background:#e4e6ef; padding:2px 6px; border-radius:4px; font-family:'JetBrains Mono'; font-size:0.7rem; color:#474c5a;">Enter</kbd> to send, <kbd style="background:#e4e6ef; padding:2px 6px; border-radius:4px; font-family:'JetBrains Mono'; font-size:0.7rem; color:#474c5a;">Shift+Enter</kbd> for new line</span>
+        <div id="charCounter" class="char-counter">0 / 1000</div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Endpoint Settings Modal -->
+  <div id="configModal" class="modal-overlay">
+    <div class="modal-card">
+      <h3>Backend Endpoint Configuration</h3>
+      <p>Configure the FastAPI backend URL. When deployed together on AWS EC2 or App Runner, leave blank to use the relative host origin.</p>
+      <input id="endpointInput" class="modal-input" type="text" placeholder="http://127.0.0.1:8000" />
+      <div class="modal-actions">
+        <button id="cancelModalBtn" class="action-btn-pill">Cancel</button>
+        <button id="saveModalBtn" class="action-btn-pill" style="background-color: var(--color-primary); color: #ffffff; border-color: transparent;">Save & Reconnect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic & Client-Side Validation -->
+  <script>
+    const STORAGE_KEY_ENDPOINT = 'rag_backend_url';
+    const MAX_QUESTION_LENGTH = 1000;
+    const WARN_QUESTION_LENGTH = 850;
+
+    let backendBaseUrl = localStorage.getItem(STORAGE_KEY_ENDPOINT) || '';
+    if (!backendBaseUrl) {
+      backendBaseUrl = window.location.origin.startsWith('http') && !window.location.origin.includes('file://')
+        ? window.location.origin
+        : 'http://127.0.0.1:8000';
+    }
+
+    let isRequestInProgress = false;
+
+    // DOM Elements
+    const chatArea = document.getElementById('chatArea');
+    const welcomeCard = document.getElementById('welcomeCard');
+    const questionInput = document.getElementById('questionInput');
+    const inputWrapper = document.getElementById('inputWrapper');
+    const sendBtn = document.getElementById('sendBtn');
+    const charCounter = document.getElementById('charCounter');
+    const validationAlert = document.getElementById('validationAlert');
+    const validationMsg = document.getElementById('validationMsg');
+    const statusPill = document.getElementById('statusPill');
+    const statusText = document.getElementById('statusText');
+    const modelBadge = document.getElementById('modelBadge');
+    const clearBtn = document.getElementById('clearBtn');
+    const configBtn = document.getElementById('configBtn');
+    const configModal = document.getElementById('configModal');
+    const endpointInput = document.getElementById('endpointInput');
+    const saveModalBtn = document.getElementById('saveModalBtn');
+    const cancelModalBtn = document.getElementById('cancelModalBtn');
+
+    function formatModelName(rawModel) {
+      if (!rawModel) return 'GroqCloud • Qwen 3.8 (27B)';
+      if (rawModel.includes('qwen3.8-27b') || rawModel.includes('qwen3.8')) {
+        return 'GroqCloud • Qwen 3.8 (27B)';
+      }
+      return `GroqCloud • ${rawModel}`;
+    }
+
+    function updateCharacterCount() {
+      const len = questionInput.value.length;
+      charCounter.textContent = `${len} / ${MAX_QUESTION_LENGTH}`;
+
+      if (len >= MAX_QUESTION_LENGTH) {
+        charCounter.className = 'char-counter limit';
+        showValidationAlert('warning', `Maximum question limit reached (${MAX_QUESTION_LENGTH} characters).`);
+      } else if (len >= WARN_QUESTION_LENGTH) {
+        charCounter.className = 'char-counter warning';
+        showValidationAlert('warning', `Approaching limit: ${MAX_QUESTION_LENGTH - len} characters left.`);
+      } else {
+        charCounter.className = 'char-counter';
+        hideValidationAlert();
+      }
+    }
+
+    function showValidationAlert(type, message) {
+      validationAlert.className = `validation-alert ${type}`;
+      validationMsg.textContent = message;
+    }
+
+    function hideValidationAlert() {
+      validationAlert.className = 'validation-alert';
+      validationAlert.style.display = 'none';
+    }
+
+    function triggerShake() {
+      inputWrapper.classList.remove('shake');
+      void inputWrapper.offsetWidth;
+      inputWrapper.classList.add('shake');
+      setTimeout(() => inputWrapper.classList.remove('shake'), 450);
+    }
+
+    function validateQuestion(rawText) {
+      const trimmed = rawText.trim();
+
+      if (!trimmed || trimmed.length === 0) {
+        showValidationAlert('error', 'Please enter a question before sending. Empty queries are not permitted.');
+        triggerShake();
+        questionInput.focus();
+        return { isValid: false, cleaned: '' };
+      }
+
+      if (trimmed.length > MAX_QUESTION_LENGTH) {
+        showValidationAlert('error', `Question exceeds maximum limit of ${MAX_QUESTION_LENGTH} characters (Current: ${trimmed.length}).`);
+        triggerShake();
+        return { isValid: false, cleaned: '' };
+      }
+
+      hideValidationAlert();
+      return { isValid: true, cleaned: trimmed };
+    }
+
+    questionInput.addEventListener('input', () => {
+      updateCharacterCount();
+      questionInput.style.height = 'auto';
+      questionInput.style.height = Math.min(questionInput.scrollHeight, 120) + 'px';
+    });
+
+    questionInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSubmit();
+      }
+    });
+
+    // Backend Health Ping & Model Update
+    async function checkBackendHealth() {
+      statusPill.className = 'status-pill checking';
+      statusText.textContent = 'Connecting...';
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(`${backendBaseUrl}/health`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const data = await res.json();
+          statusPill.className = 'status-pill';
+          statusText.textContent = 'Online';
+
+          if (data.model) {
+            modelBadge.textContent = formatModelName(data.model);
+          }
+          statusPill.title = `Retriever: ${data.retriever_initialized ? 'Ready' : 'Initializing'}\nModel: ${data.model || 'qwen/qwen3.8-27b'}\nBackend: ${data.backend}`;
+        } else {
+          throw new Error(`HTTP ${res.status}`);
+        }
+      } catch (err) {
+        statusPill.className = 'status-pill offline';
+        statusText.textContent = 'Offline';
+        statusPill.title = `Failed to connect to ${backendBaseUrl}/health: ${err.message}`;
+      }
+    }
+
+    checkBackendHealth();
+    setInterval(checkBackendHealth, 25000);
+
+    // Chat rendering functions
+    function appendUserMessage(text) {
+      if (welcomeCard) welcomeCard.style.display = 'none';
+
+      const row = document.createElement('div');
+      row.className = 'message-row user';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+      bubble.textContent = text;
+
+      const meta = document.createElement('div');
+      meta.className = 'meta-bar';
+      meta.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      row.appendChild(bubble);
+      row.appendChild(meta);
+      chatArea.appendChild(row);
+      scrollToBottom();
+    }
+
+    function createFlatLoadingCard() {
+      const row = document.createElement('div');
+      row.className = 'message-row assistant';
+      row.id = 'activeLoader';
+
+      const card = document.createElement('div');
+      card.className = 'loading-card';
+      card.innerHTML = `
+        <div class="loading-dots">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+        <span style="font-size:0.8rem; color:var(--text-secondary); font-weight:500;">
+          Querying ChromaDB vector index & Groq Qwen 3.8...
+        </span>
+      `;
+
+      row.appendChild(card);
+      chatArea.appendChild(row);
+      scrollToBottom();
+      return row;
+    }
+
+    function removeFlatLoadingCard() {
+      const loader = document.getElementById('activeLoader');
+      if (loader) loader.remove();
+    }
+
+    function appendAssistantResponse(data) {
+      removeFlatLoadingCard();
+
+      const row = document.createElement('div');
+      row.className = 'message-row assistant';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+
+      const contentPara = document.createElement('p');
+      contentPara.style.whiteSpace = 'pre-wrap';
+      contentPara.textContent = data.answer;
+      bubble.appendChild(contentPara);
+
+      if (data.sources && data.sources.length > 0) {
+        const sourcesTray = document.createElement('div');
+        sourcesTray.className = 'sources-tray';
+
+        const title = document.createElement('span');
+        title.className = 'sources-tray-title';
+        title.textContent = 'Grounded Sources:';
+        sourcesTray.appendChild(title);
+
+        const seen = new Set();
+        data.sources.forEach(s => {
+          const key = `${s.source}${s.page !== null && s.page !== undefined ? ` (p.${s.page})` : ''}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            const badge = document.createElement('span');
+            badge.className = 'source-badge';
+            badge.innerHTML = `
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+              ${escapeHtml(key)}
+            `;
+            sourcesTray.appendChild(badge);
+          }
+        });
+
+        bubble.appendChild(sourcesTray);
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'meta-bar';
+
+      const latencyBadge = document.createElement('span');
+      latencyBadge.className = 'latency-pill';
+      latencyBadge.innerHTML = `⚡ ${data.latency_ms ? data.latency_ms.toFixed(1) : '0'} ms`;
+      meta.appendChild(latencyBadge);
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'copy-btn';
+      copyBtn.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        Copy
+      `;
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(data.answer).then(() => {
+          copyBtn.innerHTML = `✓ Copied`;
+          setTimeout(() => {
+            copyBtn.innerHTML = `
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg> Copy
+            `;
+          }, 1500);
+        });
+      });
+      meta.appendChild(copyBtn);
+
+      row.appendChild(bubble);
+      row.appendChild(meta);
+      chatArea.appendChild(row);
+      scrollToBottom();
+    }
+
+    function appendErrorResponse(errorMsg, statusCode) {
+      removeFlatLoadingCard();
+
+      const row = document.createElement('div');
+      row.className = 'message-row assistant';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+      bubble.style.backgroundColor = 'var(--pastel-red-bg)';
+      bubble.style.borderColor = 'var(--pastel-red-border)';
+
+      bubble.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px; color:var(--pastel-red-text); font-weight:700; margin-bottom:6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          Error ${statusCode ? `(${statusCode})` : ''}
+        </div>
+        <p style="color:var(--pastel-red-text); font-size:0.88rem;">${escapeHtml(errorMsg)}</p>
+      `;
+
+      row.appendChild(bubble);
+      chatArea.appendChild(row);
+      scrollToBottom();
+    }
+
+    function scrollToBottom() {
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    async function handleSubmit() {
+      if (isRequestInProgress) return;
+
+      const rawInput = questionInput.value;
+      const { isValid, cleaned } = validateQuestion(rawInput);
+      if (!isValid) return;
+
+      questionInput.value = '';
+      questionInput.style.height = '32px';
+      updateCharacterCount();
+
+      isRequestInProgress = true;
+      sendBtn.disabled = true;
+      questionInput.disabled = true;
+
+      appendUserMessage(cleaned);
+      createFlatLoadingCard();
+
+      try {
+        const response = await fetch(`${backendBaseUrl}/ask`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ question: cleaned })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          appendAssistantResponse(data);
+        } else {
+          let errDetail = 'An error occurred while communicating with backend.';
+          try {
+            const errData = await response.json();
+            if (errData && errData.detail) {
+              if (Array.isArray(errData.detail)) {
+                errDetail = errData.detail.map(d => d.msg || JSON.stringify(d)).join(', ');
+              } else {
+                errDetail = errData.detail;
+              }
+            }
+          } catch (_) {}
+          appendErrorResponse(errDetail, response.status);
+        }
+      } catch (networkErr) {
+        appendErrorResponse(
+          `Failed to connect to backend server at ${backendBaseUrl}. Please verify FastAPI is running.`,
+          'Network Failure'
+        );
+      } finally {
+        isRequestInProgress = false;
+        sendBtn.disabled = false;
+        questionInput.disabled = false;
+        questionInput.focus();
+      }
+    }
+
+    sendBtn.addEventListener('click', handleSubmit);
+
+    document.querySelectorAll('.chip-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const query = btn.getAttribute('data-query');
+        if (query) {
+          questionInput.value = query;
+          questionInput.style.height = 'auto';
+          questionInput.style.height = Math.min(questionInput.scrollHeight, 120) + 'px';
+          updateCharacterCount();
+          handleSubmit();
+        }
+      });
+    });
+
+    clearBtn.addEventListener('click', () => {
+      chatArea.innerHTML = '';
+      if (welcomeCard) {
+        chatArea.appendChild(welcomeCard);
+        welcomeCard.style.display = 'block';
+      }
+      hideValidationAlert();
+      questionInput.value = '';
+      questionInput.style.height = '32px';
+      updateCharacterCount();
+      questionInput.focus();
+    });
+
+    configBtn.addEventListener('click', () => {
+      endpointInput.value = backendBaseUrl;
+      configModal.classList.add('open');
+    });
+
+    cancelModalBtn.addEventListener('click', () => {
+      configModal.classList.remove('open');
+    });
+
+    saveModalBtn.addEventListener('click', () => {
+      const val = endpointInput.value.trim().replace(/\/+$/, '');
+      if (val) {
+        backendBaseUrl = val;
+        localStorage.setItem(STORAGE_KEY_ENDPOINT, backendBaseUrl);
+      } else {
+        localStorage.removeItem(STORAGE_KEY_ENDPOINT);
+        backendBaseUrl = window.location.origin.startsWith('http') && !window.location.origin.includes('file://')
+          ? window.location.origin
+          : 'http://127.0.0.1:8000';
+      }
+      configModal.classList.remove('open');
+      checkBackendHealth();
+    });
+
+    questionInput.focus();
+  </script>
+</body>
+</html>

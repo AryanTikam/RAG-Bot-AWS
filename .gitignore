@@ -1,0 +1,87 @@
+# ==========================================
+# Python Environments & Bytecode
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# ==========================================
+# Secrets, Environment & AWS Credentials
+# ==========================================
+.env
+.env*.local
+*.pem
+*.key
+*.pub
+*.id_rsa
+*.id_ed25519
+*.ppk
+
+# Keep template file
+!.env.example
+
+# ==========================================
+# Vector Stores & Databases
+# ==========================================
+chroma_db/
+.chroma/
+*.sqlite
+*.sqlite3
+*.db
+
+# ==========================================
+# Logs & Process Output
+# ==========================================
+*.log
+nohup.out
+*.pid
+
+# ==========================================
+# OS & Editor Metadata
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
